@@ -31,25 +31,22 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: upload file
-      uses: appleboy/scp-action@master
+      #Deploy
+    - name: Docker build & push
+      run: |
+        docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+        docker build -t "${{ secrets.DOCKER_USERNAME }}"/eureka .
+        docker push "${{ secrets.DOCKER_USERNAME }}"/eureka
+
+    - name: SSH to Server and Docker pull & up
+      uses: appleboy/ssh-action@v1.0.3
       with:
-          host: ${{ secrets.SSH_IP }}
-          username: ${{ secrets.SSH_ID }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          source: "target/*.jar"
-          target: "~/"
-          rm: false
-    - name: execute shell script
-      uses: appleboy/ssh-action@master
-      with:
-              host: ${{ secrets.SSH_IP }}
-              username: ${{ secrets.SSH_ID }}
-              key: ${{ secrets.SSH_KEY }}
-              port: ${{ secrets.SSH_PORT }}
-              script_stop: true
-              script: "./startup_eureka.sh"
-    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
-    - name: Update dependency graph
-      uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
+        host: ${{ secrets.SSH_IP }}
+        username: ${{ secrets.SSH_ID }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          docker pull "${{ secrets.DOCKER_USERNAME }}"/eureka
+          docker stop eureka || true
+          docker rm eureka || true 
+          docker run -d --name eureka "${{ secrets.DOCKER_USERNAME }}"/eureka
