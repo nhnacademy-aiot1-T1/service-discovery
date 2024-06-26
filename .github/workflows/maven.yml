@@ -49,4 +49,4 @@ jobs:
           docker pull "${{ secrets.DOCKER_USERNAME }}"/eureka
           docker stop eureka || true
           docker rm eureka || true 
-          docker run -d -p 8761:8761 --name eureka "${{ secrets.DOCKER_USERNAME }}"/eureka
+          docker run -d -p 8761:8761 --network t1bridge --name eureka "${{ secrets.DOCKER_USERNAME }}"/eureka
